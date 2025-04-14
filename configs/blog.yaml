@@ -1,0 +1,18 @@
+db:
+   host: 127.0.0.1 
+   port: 5432       
+   username: blog  
+   password: blog1234 
+   database: blog   
+   sslmode: disable 
+   max-idle-connections: 100 
+   max-open-connections: 100 
+   max-connection-life-time: 10s
+   log-level: 4 
+
+log:
+   disable-caller: false 
+   disable-stacktrace: false 
+   level: debug 
+   format: console 
+   output-paths: [/tmp/blog.log, stdout] 
