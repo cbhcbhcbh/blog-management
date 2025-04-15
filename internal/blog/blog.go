@@ -2,6 +2,7 @@ package blog
 
 import (
 	"blog/internal/pkg/log"
+	"blog/internal/pkg/version/verflag"
 	"encoding/json"
 	"fmt"
 
@@ -17,6 +18,8 @@ func NewBlogCommand() *cobra.Command {
 		Short: "blog subcommand",
 		Long:  `This is a blog subcommand`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			verflag.PrintAndExitIfRequested()
+
 			log.Init(logOptions())
 			defer log.Sync()
 
@@ -38,6 +41,8 @@ func NewBlogCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "The path to the blog configuration file. Empty string for no configuration file.")
 
 	cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	verflag.AddFlags(cmd.PersistentFlags())
 
 	return cmd
 }

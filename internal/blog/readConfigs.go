@@ -38,7 +38,7 @@ func initConfig() {
 		log.Errorw("Failed to read viper configuration file", "err", err)
 	}
 
-	log.Infow("Using config file", "file", viper.ConfigFileUsed())
+	log.Debugw("Using config file", "file", viper.ConfigFileUsed())
 }
 
 func findProjectRoot() string {
