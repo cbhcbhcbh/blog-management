@@ -78,7 +78,7 @@ func AddFlags(fs *pflag.FlagSet) {
 
 func PrintAndExitIfRequested() {
 	if *versionFlag == VersionRaw {
-		fmt.Printf("%#v\n", version.Get())
+		fmt.Printf("%v\n", version.Get())
 		os.Exit(0)
 	} else if *versionFlag == VersionTrue {
 		fmt.Printf("%s\n", version.Get())

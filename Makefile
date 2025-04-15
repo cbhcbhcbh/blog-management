@@ -12,7 +12,7 @@ OUTPUT_DIR := $(ROOT_DIR)/_output
 # Define version-related variables
 
 ## Specify the version package used by the application, values will be injected into variables via `-ldflags -X`
-VERSION_PACKAGE=blog/pkg/version
+VERSION_PACKAGE=blog/internal/pkg/version
 
 ## Define VERSION semantic version
 ifeq ($(origin VERSION), undefined)
