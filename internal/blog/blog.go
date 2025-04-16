@@ -1,9 +1,12 @@
 package blog
 
 import (
+	"blog/internal/pkg/core"
+	"blog/internal/pkg/errno"
 	"blog/internal/pkg/log"
 	mw "blog/internal/pkg/middleware"
 	"blog/internal/pkg/version/verflag"
+
 	"context"
 	"errors"
 	"fmt"
@@ -64,17 +67,11 @@ func run() error {
 	router.GET("/healthz", func(c *gin.Context) {
 		log.C(c).Infow("Healthz function called")
 
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
+		core.WriteResponse(c, nil, map[string]string{"status": "ok"})
 	})
 
 	router.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":    404,
-			"message": "Page Not Found",
-			"path":    c.Request.URL.Path,
-		})
+		core.WriteResponse(c, errno.ErrPageNotFound, nil)
 	})
 
 	addr := viper.GetString("addr")

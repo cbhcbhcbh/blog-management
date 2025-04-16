@@ -28,7 +28,7 @@ func (v *versionValue) IsBoolFlag() bool {
 	return true
 }
 
-func (v *versionValue) Get() interface{} {
+func (v *versionValue) Get() any {
 	return v
 }
 

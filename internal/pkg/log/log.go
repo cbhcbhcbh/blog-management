@@ -11,12 +11,12 @@ import (
 )
 
 type Logger interface {
-	Debugw(msg string, keysAndValues ...interface{})
-	Infow(msg string, keysAndValues ...interface{})
-	Warnw(msg string, keysAndValues ...interface{})
-	Errorw(msg string, keysAndValues ...interface{})
-	Panicw(msg string, keysAndValues ...interface{})
-	Fatalw(msg string, keysAndValues ...interface{})
+	Debugw(msg string, keysAndValues ...any)
+	Infow(msg string, keysAndValues ...any)
+	Warnw(msg string, keysAndValues ...any)
+	Errorw(msg string, keysAndValues ...any)
+	Panicw(msg string, keysAndValues ...any)
+	Fatalw(msg string, keysAndValues ...any)
 	Sync()
 }
 
@@ -85,51 +85,51 @@ func (l *zapLogger) Sync() {
 	_ = l.z.Sync()
 }
 
-func Debugw(msg string, keysAndValues ...interface{}) {
+func Debugw(msg string, keysAndValues ...any) {
 	std.z.Sugar().Debugw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Debugw(msg string, keysAndValues ...interface{}) {
+func (l *zapLogger) Debugw(msg string, keysAndValues ...any) {
 	l.z.Sugar().Debugw(msg, keysAndValues...)
 }
 
-func Infow(msg string, keysAndValues ...interface{}) {
+func Infow(msg string, keysAndValues ...any) {
 	std.z.Sugar().Infow(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Infow(msg string, keysAndValues ...interface{}) {
+func (l *zapLogger) Infow(msg string, keysAndValues ...any) {
 	l.z.Sugar().Infow(msg, keysAndValues...)
 }
 
-func Warnw(msg string, keysAndValues ...interface{}) {
+func Warnw(msg string, keysAndValues ...any) {
 	std.z.Sugar().Warnw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Warnw(msg string, keysAndValues ...interface{}) {
+func (l *zapLogger) Warnw(msg string, keysAndValues ...any) {
 	l.z.Sugar().Warnw(msg, keysAndValues...)
 }
 
-func Errorw(msg string, keysAndValues ...interface{}) {
+func Errorw(msg string, keysAndValues ...any) {
 	std.z.Sugar().Errorw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Errorw(msg string, keysAndValues ...interface{}) {
+func (l *zapLogger) Errorw(msg string, keysAndValues ...any) {
 	l.z.Sugar().Errorw(msg, keysAndValues...)
 }
 
-func Panicw(msg string, keysAndValues ...interface{}) {
+func Panicw(msg string, keysAndValues ...any) {
 	std.z.Sugar().Panicw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Panicw(msg string, keysAndValues ...interface{}) {
+func (l *zapLogger) Panicw(msg string, keysAndValues ...any) {
 	l.z.Sugar().Panicw(msg, keysAndValues...)
 }
 
-func Fatalw(msg string, keysAndValues ...interface{}) {
+func Fatalw(msg string, keysAndValues ...any) {
 	std.z.Sugar().Fatalw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Fatalw(msg string, keysAndValues ...interface{}) {
+func (l *zapLogger) Fatalw(msg string, keysAndValues ...any) {
 	l.z.Sugar().Fatalw(msg, keysAndValues...)
 }
 
