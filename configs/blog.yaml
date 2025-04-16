@@ -1,3 +1,6 @@
+runmode: debug               
+addr: :8080                 
+
 db:
    host: 127.0.0.1 
    port: 5432       

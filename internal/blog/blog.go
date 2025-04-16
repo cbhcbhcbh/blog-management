@@ -3,9 +3,11 @@ package blog
 import (
 	"blog/internal/pkg/log"
 	"blog/internal/pkg/version/verflag"
-	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -48,8 +50,28 @@ func NewBlogCommand() *cobra.Command {
 }
 
 func run() error {
-	settings, _ := json.Marshal(viper.AllSettings())
-	log.Infow(string(settings))
-	log.Infow(viper.GetString("db.username"))
+	gin.SetMode(viper.GetString("runmode"))
+
+	router := gin.Default()
+
+	router.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	})
+
+	router.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    404,
+			"message": "Page Not Found",
+			"path":    c.Request.URL.Path,
+		})
+	})
+
+	if err := router.Run(viper.GetString("addr")); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalw("Failed to start server", "error", err)
+		return err
+	}
+
 	return nil
 }
