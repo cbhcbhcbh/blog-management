@@ -2,6 +2,7 @@ package blog
 
 import (
 	"blog/internal/pkg/log"
+	mw "blog/internal/pkg/middleware"
 	"blog/internal/pkg/version/verflag"
 	"errors"
 	"fmt"
@@ -54,7 +55,12 @@ func run() error {
 
 	router := gin.Default()
 
+	mws := []gin.HandlerFunc{gin.Recovery(), mw.NoCache(), mw.Cors(), mw.Secure(), mw.RequestID()}
+	router.Use(mws...)
+
 	router.GET("/healthz", func(c *gin.Context) {
+		log.C(c).Infow("Healthz function called")
+
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
