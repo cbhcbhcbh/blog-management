@@ -4,9 +4,13 @@ import (
 	"blog/internal/pkg/log"
 	mw "blog/internal/pkg/middleware"
 	"blog/internal/pkg/version/verflag"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -52,7 +56,6 @@ func NewBlogCommand() *cobra.Command {
 
 func run() error {
 	gin.SetMode(viper.GetString("runmode"))
-
 	router := gin.Default()
 
 	mws := []gin.HandlerFunc{gin.Recovery(), mw.NoCache(), mw.Cors(), mw.Secure(), mw.RequestID()}
@@ -74,10 +77,36 @@ func run() error {
 		})
 	})
 
-	if err := router.Run(viper.GetString("addr")); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalw("Failed to start server", "error", err)
+	addr := viper.GetString("addr")
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: router,
+	}
+	log.Infow("Start HTTP server", "addr", addr)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalw("Failed to start server", "err", err)
+		}
+	}()
+
+	return gracefulShutdown(srv)
+}
+
+func gracefulShutdown(srv *http.Server) error {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	<-quit
+	log.Infow("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("shutdown-timeout"))
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Errorw("Server forced to shutdown", "err", err)
 		return err
 	}
 
+	log.Infow("Server exited")
 	return nil
 }
