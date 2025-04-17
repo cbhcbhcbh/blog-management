@@ -1,6 +1,7 @@
 package store
 
 import (
+	"blog/internal/pkg/errno"
 	"blog/internal/pkg/model"
 	"context"
 
@@ -22,5 +23,14 @@ func NewUser(db *gorm.DB) *users {
 }
 
 func (u *users) Create(ctx context.Context, user *model.UserM) error {
+	var count int64
+	if err := u.db.WithContext(ctx).Model(&model.UserM{}).Where("username = ?", user.Username).Count(&count).Error; err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return errno.ErrUserAlreadyExist
+	}
+
 	return u.db.WithContext(ctx).Create(user).Error
 }
