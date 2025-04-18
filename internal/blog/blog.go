@@ -1,8 +1,6 @@
 package blog
 
 import (
-	"blog/internal/pkg/core"
-	"blog/internal/pkg/errno"
 	"blog/internal/pkg/log"
 	mw "blog/internal/pkg/middleware"
 	"blog/internal/pkg/version/verflag"
@@ -68,15 +66,9 @@ func run() error {
 	mws := []gin.HandlerFunc{gin.Recovery(), mw.NoCache(), mw.Cors(), mw.Secure(), mw.RequestID()}
 	router.Use(mws...)
 
-	router.GET("/healthz", func(c *gin.Context) {
-		log.C(c).Infow("Healthz function called")
-
-		core.WriteResponse(c, nil, map[string]string{"status": "ok"})
-	})
-
-	router.NoRoute(func(c *gin.Context) {
-		core.WriteResponse(c, errno.ErrPageNotFound, nil)
-	})
+	if err := installRouters(router); err != nil {
+		return err
+	}
 
 	addr := viper.GetString("addr")
 	srv := &http.Server{
