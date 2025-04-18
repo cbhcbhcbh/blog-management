@@ -1,4 +1,4 @@
-package blog
+package v1
 
 type CreateUserRequest struct {
 	Username string `json:"username" valid:"alphanum,required,stringlength(1|255)"`

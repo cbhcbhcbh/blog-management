@@ -4,13 +4,13 @@ import (
 	"blog/internal/blog/store"
 	"blog/internal/pkg/errno"
 	"blog/internal/pkg/model"
-	"blog/pkg/api/blog"
+	v1 "blog/pkg/api/blog/v1"
 	"context"
 	"errors"
 )
 
 type UserBiz interface {
-	Create(ctx context.Context, r *blog.CreateUserRequest) error
+	Create(ctx context.Context, r *v1.CreateUserRequest) error
 }
 
 type userBiz struct {
@@ -23,7 +23,7 @@ func New(ds store.IStore) UserBiz {
 	return &userBiz{ds: ds}
 }
 
-func (b *userBiz) Create(ctx context.Context, r *blog.CreateUserRequest) error {
+func (b *userBiz) Create(ctx context.Context, r *v1.CreateUserRequest) error {
 	userm := model.UserM{
 		Username: r.Username,
 		Password: r.Password,
