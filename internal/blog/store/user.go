@@ -11,6 +11,7 @@ import (
 type UserStore interface {
 	Create(ctx context.Context, user *model.UserM) error
 	Get(ctx context.Context, username string) (*model.UserM, error)
+	Update(ctx context.Context, user *model.UserM) error
 }
 
 type users struct {
@@ -43,4 +44,12 @@ func (u *users) Get(ctx context.Context, username string) (*model.UserM, error) 
 	}
 
 	return &user, nil
+}
+
+func (u *users) Update(ctx context.Context, user *model.UserM) error {
+	if err := u.db.WithContext(ctx).Model(&model.UserM{}).Where("username = ?", user.Username).Updates(user).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

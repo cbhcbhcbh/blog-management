@@ -16,3 +16,8 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Token string `json:"token"`
 }
+
+type ChangePasswordRequest struct {
+	OldPassword string `json:"oldPassword" valid:"required,stringlength(6|18)"`
+	NewPassword string `json:"newPassword" valid:"required,stringlength(6|18)"`
+}

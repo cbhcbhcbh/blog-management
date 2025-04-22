@@ -30,6 +30,7 @@ func installRouters(router *gin.Engine) error {
 		userv1 := v1.Group("/users")
 		{
 			userv1.POST("", uc.Create)
+			userv1.PUT(":name/change-password", uc.ChangePassword)
 		}
 	}
 
