@@ -10,6 +10,7 @@ import (
 
 type UserStore interface {
 	Create(ctx context.Context, user *model.UserM) error
+	Get(ctx context.Context, username string) (*model.UserM, error)
 }
 
 type users struct {
@@ -33,4 +34,13 @@ func (u *users) Create(ctx context.Context, user *model.UserM) error {
 	}
 
 	return u.db.WithContext(ctx).Create(user).Error
+}
+
+func (u *users) Get(ctx context.Context, username string) (*model.UserM, error) {
+	var user model.UserM
+	if err := u.db.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

@@ -5,12 +5,15 @@ import (
 	"blog/internal/pkg/errno"
 	"blog/internal/pkg/model"
 	v1 "blog/pkg/api/blog/v1"
+	"blog/pkg/auth"
+	"blog/pkg/token"
 	"context"
 	"errors"
 )
 
 type UserBiz interface {
 	Create(ctx context.Context, r *v1.CreateUserRequest) error
+	Login(ctx context.Context, r *v1.LoginRequest) (*v1.LoginResponse, error)
 }
 
 type userBiz struct {
@@ -40,4 +43,22 @@ func (b *userBiz) Create(ctx context.Context, r *v1.CreateUserRequest) error {
 	}
 
 	return nil
+}
+
+func (b *userBiz) Login(ctx context.Context, r *v1.LoginRequest) (*v1.LoginResponse, error) {
+	user, err := b.ds.Users().Get(ctx, r.Username)
+	if err != nil {
+		return nil, errno.ErrUserNotFound
+	}
+
+	if err := auth.Compare(user.Password, r.Password); err != nil {
+		return nil, errno.ErrPasswordIncorrect
+	}
+
+	t, err := token.GenerateToken(user.ID, user.Username)
+	if err != nil {
+		return nil, errno.ErrSignToken
+	}
+
+	return &v1.LoginResponse{Token: t}, nil
 }

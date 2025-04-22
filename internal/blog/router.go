@@ -23,6 +23,8 @@ func installRouters(router *gin.Engine) error {
 
 	uc := user.New(store.S)
 
+	router.POST("/login", uc.Login)
+
 	v1 := router.Group("/v1")
 	{
 		userv1 := v1.Group("/users")

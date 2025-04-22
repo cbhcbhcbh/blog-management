@@ -63,7 +63,7 @@ func run() error {
 	gin.SetMode(viper.GetString("runmode"))
 	router := gin.Default()
 
-	mws := []gin.HandlerFunc{gin.Recovery(), mw.NoCache(), mw.Cors(), mw.Secure(), mw.RequestID()}
+	mws := []gin.HandlerFunc{gin.Recovery(), mw.NoCache(), mw.Cors(), mw.Secure(), mw.RequestID(), mw.Authn()}
 	router.Use(mws...)
 
 	if err := installRouters(router); err != nil {

@@ -7,3 +7,12 @@ type CreateUserRequest struct {
 	Email    string `json:"email" valid:"required,email"`
 	Phone    string `json:"phone" valid:"required,stringlength(11|11)"`
 }
+
+type LoginRequest struct {
+	Username string `json:"username" valid:"alphanum,required,stringlength(1|255)"`
+	Password string `json:"password" valid:"required,stringlength(6|18)"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+}
