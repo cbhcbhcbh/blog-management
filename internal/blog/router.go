@@ -39,6 +39,7 @@ func installRouters(router *gin.Engine) error {
 			userv1.POST("", uc.Create)
 			userv1.PUT(":name/change-password", uc.ChangePassword)
 			userv1.Use(mw.Authn(), mw.Authz(authz))
+			userv1.GET(":name", uc.Get)
 		}
 	}
 
