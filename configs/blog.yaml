@@ -7,6 +7,11 @@ jwt:
    timeout: 24h                                   
    max-refresh: 168h    
 
+tls:
+   addr: :8443 # HTTPS 服务器监听地址
+   cert: ./_output/cert/server.crt # 证书
+   key: ./_output/cert/server.key # 证书 Key 文件
+ 
 db:
    host: 127.0.0.1 
    port: 5432       

@@ -70,22 +70,14 @@ func run() error {
 		return err
 	}
 
-	addr := viper.GetString("addr")
-	srv := &http.Server{
-		Addr:    addr,
-		Handler: router,
-	}
-	log.Infow("Start HTTP server", "addr", addr)
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalw("Failed to start server", "err", err)
-		}
-	}()
+	httpsrv := startInsecureServer(router)
 
-	return gracefulShutdown(srv)
+	httpssrv := startSecureServer(router)
+
+	return gracefulShutdown(httpsrv, httpssrv)
 }
 
-func gracefulShutdown(srv *http.Server) error {
+func gracefulShutdown(srv *http.Server, ssrv *http.Server) error {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
@@ -100,6 +92,45 @@ func gracefulShutdown(srv *http.Server) error {
 		return err
 	}
 
+	if err := ssrv.Shutdown(ctx); err != nil {
+		log.Errorw("Secure Server forced to shutdown", "err", err)
+		return err
+	}
+
 	log.Infow("Server exited")
 	return nil
+}
+
+func startInsecureServer(g *gin.Engine) *http.Server {
+	httpsrv := &http.Server{
+		Addr:    viper.GetString("addr"),
+		Handler: g,
+	}
+
+	log.Infow("Start to listening the incoming requests on http address", "addr", viper.GetString("addr"))
+	go func() {
+		if err := httpsrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalw(err.Error())
+		}
+	}()
+
+	return httpsrv
+}
+
+func startSecureServer(g *gin.Engine) *http.Server {
+	httpssrv := &http.Server{
+		Addr:    viper.GetString("addr"),
+		Handler: g,
+	}
+
+	log.Infow("Start to listening the incoming requests on https address", "addr", viper.GetString("tls.addr"))
+	cert, key := viper.GetString("tls.cert"), viper.GetString("tls.key")
+	if cert != "" && key != "" {
+		go func() {
+			if err := httpssrv.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatalw(err.Error())
+			}
+		}()
+	}
+	return httpssrv
 }
