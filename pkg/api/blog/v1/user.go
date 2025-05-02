@@ -33,3 +33,13 @@ type UserInfo struct {
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
 }
+
+type ListUserRequest struct {
+	Offset int `form:"offset"`
+	Limit  int `form:"limit"`
+}
+
+type ListUserResponse struct {
+	TotalCount int64       `json:"totalCount"`
+	Users      []*UserInfo `json:"users"`
+}

@@ -3,9 +3,9 @@ package v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "blog/pkg/proto/miniblog/v1";
+option go_package = "blog/pkg/proto/blog/v1;v1";
 
-service MiniBlog {
+service Blog {
     rpc ListUser(ListUserRequest) returns (ListUserResponse) {}
 }
 

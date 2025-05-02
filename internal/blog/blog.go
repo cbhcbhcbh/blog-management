@@ -1,13 +1,17 @@
 package blog
 
 import (
+	"blog/internal/blog/controller/v1/user"
+	"blog/internal/blog/store"
 	"blog/internal/pkg/log"
 	mw "blog/internal/pkg/middleware"
 	"blog/internal/pkg/version/verflag"
+	pb "blog/pkg/proto/blog/v1"
 
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 )
 
 var cfgFile string
@@ -74,10 +79,12 @@ func run() error {
 
 	httpssrv := startSecureServer(router)
 
-	return gracefulShutdown(httpsrv, httpssrv)
+	grpcsrv := startGRPCServer()
+
+	return gracefulShutdown(httpsrv, httpssrv, grpcsrv)
 }
 
-func gracefulShutdown(srv *http.Server, ssrv *http.Server) error {
+func gracefulShutdown(srv *http.Server, ssrv *http.Server, grpcsrv *grpc.Server) error {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
@@ -96,6 +103,8 @@ func gracefulShutdown(srv *http.Server, ssrv *http.Server) error {
 		log.Errorw("Secure Server forced to shutdown", "err", err)
 		return err
 	}
+
+	grpcsrv.GracefulStop()
 
 	log.Infow("Server exited")
 	return nil
@@ -133,4 +142,23 @@ func startSecureServer(g *gin.Engine) *http.Server {
 		}()
 	}
 	return httpssrv
+}
+
+func startGRPCServer() *grpc.Server {
+	lis, err := net.Listen("tcp", viper.GetString("grpc.addr"))
+	if err != nil {
+		log.Fatalw("Failed to listen", "err", err)
+	}
+
+	grpcsrv := grpc.NewServer()
+	pb.RegisterBlogServer(grpcsrv, user.New(store.S, nil))
+
+	log.Infow("Start to listening the incoming requests on grpc address", "addr", viper.GetString("grpc.addr"))
+	go func() {
+		if err := grpcsrv.Serve(lis); err != nil {
+			log.Fatalw(err.Error())
+		}
+	}()
+
+	return grpcsrv
 }

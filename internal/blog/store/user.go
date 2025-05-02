@@ -12,6 +12,7 @@ type UserStore interface {
 	Create(ctx context.Context, user *model.UserM) error
 	Get(ctx context.Context, username string) (*model.UserM, error)
 	Update(ctx context.Context, user *model.UserM) error
+	List(ctx context.Context, offset, limit int) (int64, []*model.UserM, error)
 }
 
 type users struct {
@@ -52,4 +53,14 @@ func (u *users) Update(ctx context.Context, user *model.UserM) error {
 	}
 
 	return nil
+}
+
+func (u *users) List(ctx context.Context, offset, limit int) (count int64, ret []*model.UserM, err error) {
+	err = u.db.Offset(offset).Limit(defaultLimit(limit)).Order("id desc").Find(&ret).
+		Offset(-1).
+		Limit(-1).
+		Count(&count).
+		Error
+
+	return
 }

@@ -3,6 +3,7 @@ package user
 import (
 	"blog/internal/blog/store"
 	"blog/internal/pkg/errno"
+	"blog/internal/pkg/log"
 	"blog/internal/pkg/model"
 	v1 "blog/pkg/api/blog/v1"
 	"blog/pkg/auth"
@@ -19,6 +20,7 @@ type UserBiz interface {
 	Login(ctx context.Context, r *v1.LoginRequest) (*v1.LoginResponse, error)
 	ChangePassword(ctx context.Context, username string, r *v1.ChangePasswordRequest) error
 	Get(ctx context.Context, username string) (*v1.GetUserResponse, error)
+	List(ctx context.Context, offset, limit int) (*v1.ListUserResponse, error)
 }
 
 type userBiz struct {
@@ -103,4 +105,29 @@ func (b *userBiz) Get(ctx context.Context, username string) (*v1.GetUserResponse
 	resp.UpdatedAt = userM.UpdatedAt.Format("2006-01-02 15:04:05")
 
 	return &resp, nil
+}
+
+func (b *userBiz) List(ctx context.Context, offset, limit int) (*v1.ListUserResponse, error) {
+	count, list, err := b.ds.Users().List(ctx, offset, limit)
+	if err != nil {
+		log.C(ctx).Errorw("Failed to list users from storage", "err", err)
+		return nil, err
+	}
+
+	users := make([]*v1.UserInfo, 0, len(list))
+	for _, item := range list {
+		user := item
+		users = append(users, &v1.UserInfo{
+			Username:  user.Username,
+			Nickname:  user.Nickname,
+			Email:     user.Email,
+			Phone:     user.Email,
+			CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	log.C(ctx).Debugw("Get users from backend storage", "count", len(users))
+
+	return &v1.ListUserResponse{TotalCount: count, Users: users}, nil
 }

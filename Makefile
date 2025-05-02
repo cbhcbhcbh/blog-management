@@ -6,6 +6,8 @@ COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 ROOT_DIR := $(abspath $(shell cd $(COMMON_SELF_DIR)/ && pwd -P))
 # Directory for build artifacts and temporary files
 OUTPUT_DIR := $(ROOT_DIR)/_output
+# Directory for proto files
+APIROOT=$(ROOT_DIR)/pkg/proto
 
 
 # ==============================================================================
@@ -37,6 +39,7 @@ print-paths:
 	@echo "COMMON_SELF_DIR = $(COMMON_SELF_DIR)"
 	@echo "ROOT_DIR        = $(ROOT_DIR)"
 	@echo "OUTPUT_DIR      = $(OUTPUT_DIR)"
+	@echo "APIROOT      = $(APIROOT)"
 
 # ==============================================================================
 # Define Makefile 'all' phony target. When executing `make`, the 'all' target will be executed by default
@@ -63,6 +66,7 @@ clean: # Clean build artifacts, temporary files, etc.
 	@-rm -vrf $(OUTPUT_DIR)
 
 .PHONY: ca
+ca:
 	@mkdir -p $(OUTPUT_DIR)/cert
 	@openssl genrsa -out $(OUTPUT_DIR)/cert/ca.key 1024
 	@openssl req -new -key $(OUTPUT_DIR)/cert/ca.key -out $(OUTPUT_DIR)/cert/ca.csr \
@@ -74,3 +78,13 @@ clean: # Clean build artifacts, temporary files, etc.
 		-subj "/C=CN/ST=Guangdong/L=Shenzhen/O=serverdevops/OU=serverit/CN=127.0.0.1/emailAddress=nosbelm@qq.com" 
 	@openssl x509 -req -CA $(OUTPUT_DIR)/cert/ca.crt -CAkey $(OUTPUT_DIR)/cert/ca.key \
 		-CAcreateserial -in $(OUTPUT_DIR)/cert/server.csr -out $(OUTPUT_DIR)/cert/server.crt
+
+.PHONY: protoc
+protoc: 
+	@echo "===========> Generate protobuf files"
+	@protoc                                            \
+		--proto_path=$(APIROOT)                          \
+		--proto_path=$(ROOT_DIR)/third_party             \
+		--go_out=paths=source_relative:$(APIROOT)        \
+		--go-grpc_out=paths=source_relative:$(APIROOT)   \
+		$(shell find $(APIROOT) -name *.proto)

@@ -10,7 +10,6 @@ type Options struct {
 	OutputPaths       []string
 }
 
-// NewOptions 创建一个带有默认参数的 Options 对象.
 func NewOptions() *Options {
 	return &Options{
 		DisableCaller:     false,
