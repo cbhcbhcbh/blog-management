@@ -55,3 +55,16 @@ tidy: # Automatically add/remove dependency packages.
 .PHONY: clean
 clean: # Clean build artifacts, temporary files, etc.
 	@-rm -vrf $(OUTPUT_DIR)
+
+.PHONY: ca
+	@mkdir -p $(OUTPUT_DIR)/cert
+	@openssl genrsa -out $(OUTPUT_DIR)/cert/ca.key 1024
+	@openssl req -new -key $(OUTPUT_DIR)/cert/ca.key -out $(OUTPUT_DIR)/cert/ca.csr \
+		-subj "/C=CN/ST=Guangdong/L=Shenzhen/O=devops/OU=it/CN=127.0.0.1/emailAddress=example@gmail.com"
+	@openssl x509 -req -in $(OUTPUT_DIR)/cert/ca.csr -signkey $(OUTPUT_DIR)/cert/ca.key -out $(OUTPUT_DIR)/cert/ca.crt
+	@openssl genrsa -out $(OUTPUT_DIR)/cert/server.key 1024 
+	@openssl rsa -in $(OUTPUT_DIR)/cert/server.key -pubout -out $(OUTPUT_DIR)/cert/server.pem 
+	@openssl req -new -key $(OUTPUT_DIR)/cert/server.key -out $(OUTPUT_DIR)/cert/server.csr \
+		-subj "/C=CN/ST=Guangdong/L=Shenzhen/O=serverdevops/OU=serverit/CN=127.0.0.1/emailAddress=nosbelm@qq.com" 
+	@openssl x509 -req -CA $(OUTPUT_DIR)/cert/ca.crt -CAkey $(OUTPUT_DIR)/cert/ca.key \
+		-CAcreateserial -in $(OUTPUT_DIR)/cert/server.csr -out $(OUTPUT_DIR)/cert/server.crt
