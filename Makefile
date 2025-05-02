@@ -32,6 +32,12 @@ GO_LDFLAGS += \
 	-X $(VERSION_PACKAGE).GitTreeState=$(GIT_TREE_STATE) \
 	-X $(VERSION_PACKAGE).BuildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 
+.PHONY: print-paths
+print-paths:
+	@echo "COMMON_SELF_DIR = $(COMMON_SELF_DIR)"
+	@echo "ROOT_DIR        = $(ROOT_DIR)"
+	@echo "OUTPUT_DIR      = $(OUTPUT_DIR)"
+
 # ==============================================================================
 # Define Makefile 'all' phony target. When executing `make`, the 'all' target will be executed by default
 .PHONY: all
