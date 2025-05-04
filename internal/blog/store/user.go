@@ -4,6 +4,7 @@ import (
 	"blog/internal/pkg/errno"
 	"blog/internal/pkg/model"
 	"context"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -13,6 +14,7 @@ type UserStore interface {
 	Get(ctx context.Context, username string) (*model.UserM, error)
 	Update(ctx context.Context, user *model.UserM) error
 	List(ctx context.Context, offset, limit int) (int64, []*model.UserM, error)
+	Delete(ctx context.Context, username string) error
 }
 
 type users struct {
@@ -63,4 +65,13 @@ func (u *users) List(ctx context.Context, offset, limit int) (count int64, ret [
 		Error
 
 	return
+}
+
+func (u *users) Delete(ctx context.Context, username string) error {
+	err := u.db.Where("username = ?", username).Delete(&model.UserM{}).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	return nil
 }

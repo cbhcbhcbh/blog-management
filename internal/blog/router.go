@@ -1,6 +1,7 @@
 package blog
 
 import (
+	"blog/internal/blog/controller/v1/post"
 	"blog/internal/blog/controller/v1/user"
 	"blog/internal/blog/store"
 	"blog/internal/pkg/core"
@@ -29,6 +30,7 @@ func installRouters(router *gin.Engine) error {
 	}
 
 	uc := user.New(store.S, authz)
+	pc := post.New(store.S)
 
 	router.POST("/login", uc.Login)
 
@@ -40,6 +42,19 @@ func installRouters(router *gin.Engine) error {
 			userv1.PUT(":name/change-password", uc.ChangePassword)
 			userv1.Use(mw.Authn(), mw.Authz(authz))
 			userv1.GET(":name", uc.Get)
+			userv1.PUT(":name", uc.Update)
+			userv1.GET("", uc.List)
+			userv1.DELETE(":name", uc.Delete)
+		}
+
+		postv1 := v1.Group("/posts", mw.Authn())
+		{
+			postv1.POST("", pc.Create)
+			postv1.GET(":postID", pc.Get)
+			postv1.PUT(":postID", pc.Update)
+			postv1.DELETE("", pc.DeleteCollection)
+			postv1.GET("", pc.List)
+			postv1.DELETE(":postID", pc.Delete)
 		}
 	}
 

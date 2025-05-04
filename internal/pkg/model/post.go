@@ -1,6 +1,11 @@
 package model
 
-import "time"
+import (
+	"blog/pkg/util/id"
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type PostM struct {
 	ID        int64     `gorm:"column:id;primary_key"`
@@ -14,4 +19,10 @@ type PostM struct {
 
 func (p *PostM) TableName() string {
 	return "post"
+}
+
+func (p *PostM) BeforeCreate(tx *gorm.DB) error {
+	p.PostID = "post-" + id.GenShortID()
+
+	return nil
 }
