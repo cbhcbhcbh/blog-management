@@ -44,7 +44,7 @@ print-paths:
 # ==============================================================================
 # Define Makefile 'all' phony target. When executing `make`, the 'all' target will be executed by default
 .PHONY: all
-	all: format build
+	all: format cover build
 
 # ==============================================================================
 # Define other necessary phony targets
@@ -88,3 +88,17 @@ protoc:
 		--go_out=paths=source_relative:$(APIROOT)        \
 		--go-grpc_out=paths=source_relative:$(APIROOT)   \
 		$(shell find $(APIROOT) -name *.proto)
+
+.PHONY: test
+test:
+	@echo "===========> Run unit test"
+	@go test -v -cover -coverprofile=_output/coverage.out `go list ./...`
+	@sed -i '/mock_.*.go/d' _output/coverage.out 
+
+.PHONY: cover
+cover: test 
+	@go tool cover -func=_output/coverage.out | awk -v target=30 -f ./scripts/coverage.awk
+
+.PHONY: deps
+deps: 
+	@go generate $(ROOT_DIR)/...
