@@ -44,7 +44,7 @@ print-paths:
 # ==============================================================================
 # Define Makefile 'all' phony target. When executing `make`, the 'all' target will be executed by default
 .PHONY: all
-	all: format cover build
+	all: format lint cover build
 
 # ==============================================================================
 # Define other necessary phony targets
@@ -102,3 +102,8 @@ cover: test
 .PHONY: deps
 deps: 
 	@go generate $(ROOT_DIR)/...
+
+.PHONY: lint
+lint: 
+	@echo "===========> Run golangci to lint source codes"
+	@golangci-lint run -c ./.golangci.yaml ./...
