@@ -1,109 +1,124 @@
-# ==============================================================================
-# Define global Makefile variables for easier reference
-
-COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
-# Project root directory
-ROOT_DIR := $(abspath $(shell cd $(COMMON_SELF_DIR)/ && pwd -P))
-# Directory for build artifacts and temporary files
-OUTPUT_DIR := $(ROOT_DIR)/_output
-# Directory for proto files
-APIROOT=$(ROOT_DIR)/pkg/proto
-
+# 默认执行 all 目标
+.DEFAULT_GOAL := all
 
 # ==============================================================================
-# Define version-related variables
-
-## Specify the version package used by the application, values will be injected into variables via `-ldflags -X`
-VERSION_PACKAGE=blog/internal/pkg/version
-
-## Define VERSION semantic version
-ifeq ($(origin VERSION), undefined)
-VERSION := $(shell git describe --tags --always --match='v*')
-endif
-
-## Check if the code repository is dirty (dirty by default)
-GIT_TREE_STATE:="dirty"
-ifeq (, $(shell git status --porcelain 2>/dev/null))
-	GIT_TREE_STATE="clean"
-endif
-GIT_COMMIT:=$(shell git rev-parse HEAD)
-
-GO_LDFLAGS += \
-	-X $(VERSION_PACKAGE).GitVersion=$(VERSION) \
-	-X $(VERSION_PACKAGE).GitCommit=$(GIT_COMMIT) \
-	-X $(VERSION_PACKAGE).GitTreeState=$(GIT_TREE_STATE) \
-	-X $(VERSION_PACKAGE).BuildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-
-.PHONY: print-paths
-print-paths:
-	@echo "COMMON_SELF_DIR = $(COMMON_SELF_DIR)"
-	@echo "ROOT_DIR        = $(ROOT_DIR)"
-	@echo "OUTPUT_DIR      = $(OUTPUT_DIR)"
-	@echo "APIROOT      = $(APIROOT)"
-
-# ==============================================================================
-# Define Makefile 'all' phony target. When executing `make`, the 'all' target will be executed by default
+# 定义 Makefile all 伪目标，执行 `make` 时，会默认会执行 all 伪目标
 .PHONY: all
-	all: format lint cover build
+all: gen.add-copyright go.format go.lint go.cover go.build
 
 # ==============================================================================
-# Define other necessary phony targets
+# Includes
 
-.PHONY: build
-build: tidy # Compile source code, depends on 'tidy' target to automatically add/remove dependency packages.
-	@go build -v -ldflags "$(GO_LDFLAGS)" -o $(OUTPUT_DIR)/blog $(ROOT_DIR)/cmd/blog/main.go
+# 确保 `include common.mk` 位于第一行，common.mk 中定义了一些变量，后面的子 makefile 有依赖
+include scripts/make-rules/common.mk 
+include scripts/make-rules/tools.mk
+include scripts/make-rules/golang.mk
+include scripts/make-rules/generate.mk
 
-.PHONY: format
-format: # Format Go source code.
-	@gofmt -s -w ./
+# ==============================================================================
+# Usage
 
-.PHONY: tidy
-tidy: # Automatically add/remove dependency packages.
-	@go mod tidy
+define USAGE_OPTIONS
 
-.PHONY: clean
-clean: # Clean build artifacts, temporary files, etc.
-	@-rm -vrf $(OUTPUT_DIR)
+Options:
+  BINS             The binaries to build. Default is all of cmd.
+                   This option is available when using: make build/build.multiarch
+                   Example: make build BINS="miniblog test"
+  VERSION          The version information compiled into binaries.
+                   The default is obtained from gsemver or git.
+  V                Set to 1 enable verbose build. Default is 0.
+endef
+export USAGE_OPTIONS
+
+## --------------------------------------
+## Generate / Manifests
+## --------------------------------------
+
+##@ generate:
+
+.PHONY: add-copyright
+add-copyright: ## 添加版权头信息.
+	@$(MAKE) gen.add-copyright
 
 .PHONY: ca
-ca:
-	@mkdir -p $(OUTPUT_DIR)/cert
-	@openssl genrsa -out $(OUTPUT_DIR)/cert/ca.key 1024
-	@openssl req -new -key $(OUTPUT_DIR)/cert/ca.key -out $(OUTPUT_DIR)/cert/ca.csr \
-		-subj "/C=CN/ST=Guangdong/L=Shenzhen/O=devops/OU=it/CN=127.0.0.1/emailAddress=example@gmail.com"
-	@openssl x509 -req -in $(OUTPUT_DIR)/cert/ca.csr -signkey $(OUTPUT_DIR)/cert/ca.key -out $(OUTPUT_DIR)/cert/ca.crt
-	@openssl genrsa -out $(OUTPUT_DIR)/cert/server.key 1024 
-	@openssl rsa -in $(OUTPUT_DIR)/cert/server.key -pubout -out $(OUTPUT_DIR)/cert/server.pem 
-	@openssl req -new -key $(OUTPUT_DIR)/cert/server.key -out $(OUTPUT_DIR)/cert/server.csr \
-		-subj "/C=CN/ST=Guangdong/L=Shenzhen/O=serverdevops/OU=serverit/CN=127.0.0.1/emailAddress=nosbelm@qq.com" 
-	@openssl x509 -req -CA $(OUTPUT_DIR)/cert/ca.crt -CAkey $(OUTPUT_DIR)/cert/ca.key \
-		-CAcreateserial -in $(OUTPUT_DIR)/cert/server.csr -out $(OUTPUT_DIR)/cert/server.crt
+ca: ## 生成 CA 文件.
+	@$(MAKE) gen.ca
 
 .PHONY: protoc
-protoc: 
-	@echo "===========> Generate protobuf files"
-	@protoc                                            \
-		--proto_path=$(APIROOT)                          \
-		--proto_path=$(ROOT_DIR)/third_party             \
-		--go_out=paths=source_relative:$(APIROOT)        \
-		--go-grpc_out=paths=source_relative:$(APIROOT)   \
-		$(shell find $(APIROOT) -name *.proto)
-
-.PHONY: test
-test:
-	@echo "===========> Run unit test"
-	@go test -v -cover -coverprofile=_output/coverage.out `go list ./...`
-	@sed -i '/mock_.*.go/d' _output/coverage.out 
-
-.PHONY: cover
-cover: test 
-	@go tool cover -func=_output/coverage.out | awk -v target=30 -f ./scripts/coverage.awk
+protoc: ## 编译 protobuf 文件.
+	@$(MAKE) gen.protoc
 
 .PHONY: deps
-deps: 
-	@go generate $(ROOT_DIR)/...
+deps: ## 安装依赖，例如：生成需要的代码、安装需要的工具等.
+	@$(MAKE) gen.deps
+
+## --------------------------------------
+## Binaries
+## --------------------------------------
+
+##@ build:
+
+.PHONY: build
+build: go.tidy  ## 编译源码，依赖 tidy 目标自动添加/移除依赖包.
+	@$(MAKE) go.build
+
+## --------------------------------------
+## Cleanup
+## --------------------------------------
+
+##@ clean:
+
+.PHONY: clean
+clean: ## 清理构建产物、临时文件等.
+	@echo "===========> Cleaning all build output"
+	@-rm -vrf $(OUTPUT_DIR)
+
+
+## --------------------------------------
+## Lint / Verification
+## --------------------------------------
+
+##@ lint and verify:
 
 .PHONY: lint
-lint: 
-	@echo "===========> Run golangci to lint source codes"
-	@golangci-lint run -c ./.golangci.yaml ./...
+lint: ## 执行静态代码检查.
+	@$(MAKE) go.lint
+
+
+## --------------------------------------
+## Testing
+## --------------------------------------
+
+##@ test:
+
+.PHONY: test 
+test: ## 执行单元测试.
+	@$(MAKE) go.test
+
+.PHONY: cover 
+cover: ## 执行单元测试，并校验覆盖率阈值.
+	@$(MAKE) go.cover
+
+
+## --------------------------------------
+## Hack / Tools
+## --------------------------------------
+
+##@ hack/tools:
+
+.PHONY: format
+format:  ## 格式化 Go 源码.
+	@$(MAKE) go.format
+
+.PHONY: swagger
+swagger: tools.verify.swagger ## 启动 swagger 在线文档（监听端口：65534）.
+	@swagger serve -F=swagger --no-open --port 65534 $(ROOT_DIR)/api/openapi/openapi.yaml
+
+.PHONY: tidy
+tidy: ## 自动添加/移除依赖包.
+	@$(MAKE) go.tidy
+
+.PHONY: help
+help: Makefile ## 打印 Makefile help 信息.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<TARGETS> <OPTIONS>\033[0m\n\n\033[35mTargets:\033[0m\n"} /^[0-9A-Za-z._-]+:.*?##/ { printf "  \033[36m%-45s\033[0m %s\n", $$1, $$2 } /^\$$\([0-9A-Za-z_-]+\):.*?##/ { gsub("_","-", $$1); printf "  \033[36m%-45s\033[0m %s\n", tolower(substr($$1, 3, length($$1)-7)), $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' Makefile #$(MAKEFILE_LIST)
+	@echo -e "$$USAGE_OPTIONS"
