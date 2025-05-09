@@ -10,6 +10,7 @@ import (
 	mw "blog/internal/pkg/middleware"
 	"blog/pkg/auth"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,6 +24,8 @@ func installRouters(router *gin.Engine) error {
 
 		core.WriteResponse(c, nil, map[string]string{"status": "ok"})
 	})
+
+	pprof.Register(router)
 
 	authz, err := auth.NewAuthz(store.S.DB())
 	if err != nil {

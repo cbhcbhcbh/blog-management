@@ -10,8 +10,10 @@ import (
 	"blog/pkg/token"
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/jinzhu/copier"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 )
 
@@ -116,24 +118,45 @@ func (b *userBiz) List(ctx context.Context, offset, limit int) (*v1.ListUserResp
 		return nil, err
 	}
 
-	users := make([]*v1.UserInfo, 0, len(list))
+	var m sync.Map
+	eg, ctx := errgroup.WithContext(ctx)
 	for _, item := range list {
 		user := item
-		count, _, err := b.ds.Posts().List(ctx, user.Username, 0, 0)
-		if err != nil {
-			log.C(ctx).Errorw("Failed to list posts", "err", err)
-			return nil, err
-		}
+		eg.Go(func() error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				count, _, err := b.ds.Posts().List(ctx, user.Username, 0, 0)
+				if err != nil {
+					log.C(ctx).Errorw("Failed to list posts", "err", err)
+					return err
+				}
 
-		users = append(users, &v1.UserInfo{
-			Username:  user.Username,
-			Nickname:  user.Nickname,
-			Email:     user.Email,
-			Phone:     user.Email,
-			PostCount: count,
-			CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
+				m.Store(user.ID, &v1.UserInfo{
+					Username:  user.Username,
+					Nickname:  user.Nickname,
+					Email:     user.Email,
+					Phone:     user.Email,
+					PostCount: count,
+					CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
+					UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
+				})
+
+				return nil
+			}
 		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		log.C(ctx).Errorw("Failed to wait all function calls returned", "err", err)
+		return nil, err
+	}
+
+	users := make([]*v1.UserInfo, 0, len(list))
+	for _, item := range list {
+		user, _ := m.Load(item.ID)
+		users = append(users, user.(*v1.UserInfo))
 	}
 
 	log.C(ctx).Debugw("Get users from backend storage", "count", len(users))
@@ -166,7 +189,6 @@ func (b *userBiz) Update(ctx context.Context, username string, user *v1.UpdateUs
 	return nil
 }
 
-// Delete 是 UserBiz 接口中 `Delete` 方法的实现.
 func (b *userBiz) Delete(ctx context.Context, username string) error {
 	if err := b.ds.Users().Delete(ctx, username); err != nil {
 		return err
